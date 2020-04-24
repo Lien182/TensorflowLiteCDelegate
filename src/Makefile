@@ -1,6 +1,6 @@
 CC = gcc
 
-CFLAGS += -g -Wno-unused-variable -Wall -I ~/git/tensorflow/
+CFLAGS += -g -Wno-unused-variable -Wall -I ../tensorflow/
 
 LDFLAGS+= lib/libtensorflowlite_c.so -lm
 
