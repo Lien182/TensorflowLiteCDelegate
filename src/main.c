@@ -18,17 +18,17 @@ int main(void)
     int32 width;
     int32 height;
     int32 bytesPerPixel;
-    ReadImageAlign("../test/grace_hopper.bmp", &pixels, &width, &height,&bytesPerPixel);
+    ReadImageAlign("test/grace_hopper.bmp", &pixels, &width, &height,&bytesPerPixel);
     printf("Loaded image, witdth=%d, height=%d; bytesPerPixel=%d \n", width, height, bytesPerPixel);
 
 
-    TfLiteModel* model = TfLiteModelCreateFromFile("../model/mobilenet_v1_1.0_224_quant.tflite");
+    TfLiteModel* model = TfLiteModelCreateFromFile("model/mobilenet_v1_1.0_224_quant.tflite");
     TfLiteInterpreterOptions* options = TfLiteInterpreterOptionsCreate();
     TfLiteInterpreterOptionsSetNumThreads(options, 2);
 
     //Delegate
-    //TfLiteDelegate * TFfpga = CreateMyDelegate();
-    //TfLiteInterpreterOptionsAddDelegate(options, TFfpga );
+    TfLiteDelegate * TFfpga = CreateFPGADelegate();
+    TfLiteInterpreterOptionsAddDelegate(options, TFfpga );
 
     // Create the interpreter.
     TfLiteInterpreter* interpreter = TfLiteInterpreterCreate(model, options);
@@ -42,13 +42,13 @@ int main(void)
 
     printf("Input Tensor type: %d\n", input_tensor->type);  
 
-    printf("%d \n", TfLiteTensorCopyFromBuffer(input_tensor, pixels,
+    printf("TfLiteTensorCopyFromBuffer: %d \n", TfLiteTensorCopyFromBuffer(input_tensor, pixels,
                                 width*height*4));
 
     // Execute inference.
     TfLiteInterpreterInvoke(interpreter);
 
-    // Extract the output tensor data.
+    // Extract the output tensor data.intinterpretererpreter
     const TfLiteTensor* output_tensor =
           TfLiteInterpreterGetOutputTensor(interpreter, 0);
 
@@ -74,7 +74,7 @@ int main(void)
     TfLiteInterpreterDelete(interpreter);
     TfLiteInterpreterOptionsDelete(options);
     TfLiteModelDelete(model);
-
+    DeleteFPGADelegate(TFfpga);
 
     //free(pixels);
 }

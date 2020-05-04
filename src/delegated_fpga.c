@@ -46,6 +46,8 @@ t_fpga_delegate;
 
 }
 
+
+
 void kernel_free(TfLiteContext* context, void* buffer)
 {
     printf("Kernel Free \n");
@@ -69,12 +71,9 @@ TfLiteRegistration GetMyDelegateNodeRegistration()
 {
     TfLiteRegistration kernel_registration;
     //kernel_registration.builtin_code = kTfLiteBuiltinDelegate;
-    
-    kernel_registration.builtin_code = kTfLiteBuiltinConv2d;
-    
+    kernel_registration.builtin_code = kTfLiteBuiltinDepthwiseConv2d;
     kernel_registration.custom_name = "MyDelegate";
-    kernel_registration.free = &kernel_free;
-  
+    kernel_registration.free = &kernel_free;  
     kernel_registration.init = &kernel_init;
     kernel_registration.invoke = &kernel_invoke;
     kernel_registration.prepare = &kernel_prepare;
@@ -84,22 +83,23 @@ TfLiteRegistration GetMyDelegateNodeRegistration()
 static bool SupportedOp(const TfLiteRegistration* registration) {
     switch (registration->builtin_code) {
     case kTfLiteBuiltinDensify:
-        printf("Yes, i support this operation: kTfLiteBuiltinFullyConnected \n");
-        return false;
-
+        printf("Yes, I support this operation: kTfLiteBuiltinFullyConnected \n");
+        return true;
       case kTfLiteBuiltinConv2d:      
-        printf("Yes, i support this operation: kTfLiteBuiltinConv2d %d\n", cnt2++);
+        printf("Yes, I support this operation: kTfLiteBuiltinConv2d %d\n", cnt2++);
         return true;
       case kTfLiteBuiltinDepthwiseConv2d:
-        printf("Yes, i support this operation: kTfLiteBuiltinDepthwiseConv2d \n");
-        return false;
+        printf("Yes, I support this operation: kTfLiteBuiltinDepthwiseConv2d \n");
+        return true;
       default:
-        printf("No, i dont like this code %d \n", registration->builtin_code);
+        printf("No, I dont like this operation %d \n", registration->builtin_code);
         return false;
     }
   }
 
 
+//CL: Delegate checks the graph if there are nodes to replace.
+//
 TfLiteStatus DelegatePrepare(TfLiteContext* context, TfLiteDelegate* delegate) {
 
   // Claim all nodes that can be evaluated by the delegate and ask the
@@ -107,7 +107,6 @@ TfLiteStatus DelegatePrepare(TfLiteContext* context, TfLiteDelegate* delegate) {
   // Reserve 1 element, since we need first element to be size.
   
     TfLiteIntArray* plan;
-
     TfLiteStatus ret_val;
 
     TF_LITE_ENSURE_STATUS(context->GetExecutionPlan(context, &plan));
@@ -122,6 +121,8 @@ TfLiteStatus DelegatePrepare(TfLiteContext* context, TfLiteDelegate* delegate) {
     {
         TF_LITE_ENSURE_STATUS(context->GetNodeAndRegistration(
             context, node_index, &node, &registration));
+
+        printf("Node: %d ", node_index);      
         if (SupportedOp(registration)) 
         {
             supported_nodes->data[++iterator] = node_index;
@@ -180,12 +181,12 @@ TfLiteStatus CopyFromBufferHandle(TfLiteContext* context,
 
 
 // Caller takes ownership of the returned pointer.
-TfLiteDelegate* CreateMyDelegate(void) {
+TfLiteDelegate* CreateFPGADelegate(void) {
 
     TfLiteDelegate* delegate = (TfLiteDelegate*)malloc(sizeof(TfLiteDelegate));
 
     if (delegate == NULL)
-      return 0;
+      return NULL;
 
     *delegate = TfLiteDelegateCreate();
 
@@ -200,4 +201,12 @@ TfLiteDelegate* CreateMyDelegate(void) {
     // This can be null.
     delegate->FreeBufferHandle = &FreeBufferHandle;
     return delegate;
+}
+
+
+void DeleteFPGADelegate(TfLiteDelegate * delegate) {
+
+  free(delegate);
+
+  return;
 }

@@ -3,4 +3,5 @@
 #include "tensorflow/lite/c/common.h"
 
 
-TfLiteDelegate* CreateMyDelegate(void);
+TfLiteDelegate* CreateFPGADelegate(void);
+void DeleteFPGADelegate(TfLiteDelegate * delegate);
